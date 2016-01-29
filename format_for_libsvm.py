@@ -79,8 +79,10 @@ def format_text(args, stop_words):
 sql = "SELECT indus_code, title, content FROM indus_text_with_label ORDER BY id"
 cursor = conn.cursor()
 cursor.execute(sql)
-text_format = format_text(conn, stop_words)
+text_format = format_text(cursor, stop_words)
 dictionary = corpora.Dictionary(text_format)
+once_ids = [tokenid for tokenid, docfreq in dictionary.dfs.iteritems() if docfreq < 3]
+dictionary.filter_tokens(bad_ids=once_ids)
 text_format.close()
 text_format = format_text(conn, stop_words)
 corpus = [dictionary.doc2bow(text) for text in text_format]
@@ -158,4 +160,3 @@ prf = precision_recall_fscore_support([int(x) for x in predict[0]], indus_code_l
 
 # svm_save_model("svm_RBF", svmmodel)
 # svmmodel = svm_load_model(r'D:\WorkSpace\Python_WorkSpace\python_classification\svm_model\svm_RBF')
-svm_train()

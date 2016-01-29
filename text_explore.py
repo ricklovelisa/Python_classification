@@ -229,6 +229,9 @@ def corp(conn, stop_words):
 
 corps = corp(conn, stop_words)
 dictionary = corpora.Dictionary(corps)
+once_ids = [tokenid for tokenid, docfreq in dictionary.dfs.iteritems() if docfreq < 3]
+dictionary.filter_tokens(bad_ids=once_ids)
+dictionary.compactify()
 corps.close()
 corps = corp(conn, stop_words)
 corpus = [dictionary.doc2bow(text) for text in corps]

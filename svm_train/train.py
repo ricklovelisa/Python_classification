@@ -35,6 +35,7 @@ import jieba
 import re
 import codecs
 import cPickle
+import pynlpir
 import numpy as np
 from svmutil import *
 from gensim import corpora, models
@@ -98,12 +99,15 @@ with open('svm_train/pkl/indus_code_list_test.pkl','a+') as f:
 sql = "SELECT indus_code, title, content FROM indus_text_with_label ORDER BY id"
 cursor.execute(sql)
 
-text_train = format_text(cursor, train_index, stop_words)    #创建格式化文本
-dictionary_train = corpora.Dictionary(text_train)     #创建词典，需要本地固化。
+text_train = format_text(cursor, train_index, stop_words)    # 创建格式化文本
+dictionary_train = corpora.Dictionary(text_train)     # 创建词典，需要本地固化。
+once_ids = [tokenid for tokenid, docfreq in dictionary_train.dfs.iteritems() if docfreq < 3]  # 去除文档频数低于2的词
+dictionary_train.filter_tokens(bad_ids=once_ids)
+dictionary_train.compactify()
 cursor.scroll(0)
 text_train = format_text(cursor, train_index, stop_words)
 corpus_train = [dictionary_train.doc2bow(text) for text in text_train]   # 生成语料库
-tf_idf_train = models.TfidfModel(corpus_train)     #  生成的tfidf模型需要固化
+tf_idf_train = models.TfidfModel(corpus_train)     # 生成的tfidf模型需要固化
 corpus_tfidf_train = tf_idf_train[corpus_train]
 
 # 固化字典，语料库和tfidf模型

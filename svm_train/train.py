@@ -49,6 +49,7 @@ def etl(s):
     s = regex.sub('', s)
     return s
 
+
 def format_text(args, index_range, stop_words):
 
     # 从数据库中提取文本，并将其格式化，以备后面创建字典和语料库
@@ -58,7 +59,8 @@ def format_text(args, index_range, stop_words):
         i += 1
         if i not in index_range:    # 训练集
             continue
-        temp = map(etl, jieba.lcut(line[2].lower()))
+        # temp = map(etl, jieba.lcut(line[2].lower())) # 结巴分词
+        temp = map(etl, pynlpir.segment(line[2].lower(),pos_tagging=False)) # pynlpir分词
         yield filter(lambda word: (len(word)) > 0 and
                                   (word not in stop_words), temp)
 
@@ -72,13 +74,16 @@ jieba.load_userdict('D:/WorkSpace/Python_WorkSpace/'
 stop_words = set(line.rstrip() for line in codecs.open('D:/WorkSpace/Python_WorkSpace/'
                                               'python_classification/'
                                               'dicts/stop_words_CN', encoding='utf8'))
+pynlpir.open(encoding="utf8")
+pynlpir.nlpir.ImportUserDict('D:/WorkSpace/Python_WorkSpace/'
+                             'python_classification/dicts/user_dic')
 
 # 随机抽取训练集和测试集
-test_index = np.random.choice(range(80111), 25000, False) # 需要本地固化
+test_index = np.random.choice(range(80111), 25000, False) # 需要本地序列化
 train_index = range(80111)
 for i in test_index:
     train_index.remove(i)
-train_index = np.array(train_index) # 需要本地固化
+train_index = np.array(train_index) # 需要本地序列化
 
 # 获取与文章对应的行业列表
 sql = 'select indus_code from indus_text_with_label order by id'
@@ -100,17 +105,17 @@ sql = "SELECT indus_code, title, content FROM indus_text_with_label ORDER BY id"
 cursor.execute(sql)
 
 text_train = format_text(cursor, train_index, stop_words)    # 创建格式化文本
-dictionary_train = corpora.Dictionary(text_train)     # 创建词典，需要本地固化。
+dictionary_train = corpora.Dictionary(text_train)     # 创建词典，需要本地序列化。
 once_ids = [tokenid for tokenid, docfreq in dictionary_train.dfs.iteritems() if docfreq < 3]  # 去除文档频数低于2的词
 dictionary_train.filter_tokens(bad_ids=once_ids)
 dictionary_train.compactify()
 cursor.scroll(0)
 text_train = format_text(cursor, train_index, stop_words)
 corpus_train = [dictionary_train.doc2bow(text) for text in text_train]   # 生成语料库
-tf_idf_train = models.TfidfModel(corpus_train)     # 生成的tfidf模型需要固化
+tf_idf_train = models.TfidfModel(corpus_train)     # 生成的tfidf模型需要序列化
 corpus_tfidf_train = tf_idf_train[corpus_train]
 
-# 固化字典，语料库和tfidf模型
+# 序列化字典，语料库和tfidf模型
 with open('svm_train/pkl/dictionary_train.pkl','a+') as f:
     pick_3 = cPickle.dump(dictionary_train, f)
 

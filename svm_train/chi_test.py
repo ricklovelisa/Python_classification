@@ -38,8 +38,8 @@ import cPickle
 import numpy as np
 from svmutil import *
 from gensim import corpora, models
-from sklearn.metrics import precision_recall_fscore_support
-
+from scipy.stats import chi2_contingency
+from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 # 加载数据对象
 with open('svm_train/pkl/indus_code_list_train.pkl', 'a+') as f:
     indus_code_list_train = cPickle.load(f)
@@ -66,26 +66,48 @@ with open('svm_train/pkl/tf_idf_train.pkl', 'a+') as f:
 # df(t,c) + df(t,C) = df(t)
 # df(T,c) + df(T,C) = df(T) = total_df - df(t)
 
+def bilized_fun(x, y):
+    if x == y:
+        return 1
+    else:
+        return 0
 
-def df_term_cate(word_id, tar_label, label_list, corpus):
-    """
-    word_id: 需要计算卡方检验的word_id
-    tar_label:需要计算卡方检验的目标类别
-    label_list:和corpus一一对应的label list
-    corpus:语料库
-    """
 
-    count = {"df_tc": 0, "df_Tc": 0, "df_tC": 0, "df_TC": 0}
-    for index, text in enumerate(corpus):
-        if word_id in dict(text).keys() and tar_label == label_list[index]:
-            count["df_tc"] += 1
-        elif word_id in dict(text).keys() and tar_label != label_list[index]:
-            count["df_tC"] += 1
-        elif word_id not in dict(text).keys() and tar_label == label_list[index]:
-            count["df_Tc"] += 1
-        elif word_id not in dict(text).keys() and tar_label != label_list[index]:
-            count["df_TC"] += 1
-    return count
+def include_term(x, y):
+    if y in dict(x).keys():
+        return 1
+    else:
+        return 0
+
+def df_term_cate(indus_code_list_train, indus_code, corpus_tfidf_train, term):
+    cate_list = map(bilized_fun, indus_code_list_train, [indus_code] * len(indus_code_list_train))
+    term_list = map(include_term, corpus_tfidf_train, [term] * len(indus_code_list_train))
+    conf_matrix = confusion_matrix(cate_list, term_list, labels=[1, 0])
+    chi_value = chi2_contingency(conf_matrix)[0]
+    return (conf_matrix, chi_value)
+    # chi_value = np.long(conf_matrix[0,0]*conf_matrix[1,1]-conf_matrix[0,1]*conf_matrix[1,0])**2*1.0\
+    #             /np.long(conf_matrix[0,0]+conf_matrix[0,1])/np.long(conf_matrix[1,0]+conf_matrix[1,1])
+
+
+## 这个方法效率太低，弃用
+# def df_term_cate(word_id, tar_label, label_list, corpus):
+#     """
+#     word_id: 需要计算卡方检验的word_id
+#     tar_label:需要计算卡方检验的目标类别
+#     label_list:和corpus一一对应的label list
+#     corpus:语料库
+#     """
+#     count = {"df_tc": 0, "df_Tc": 0, "df_tC": 0, "df_TC": 0}
+#     for index, text in enumerate(corpus):
+#         if word_id in dict(text).keys() and tar_label == label_list[index]:
+#             count["df_tc"] += 1
+#         elif word_id in dict(text).keys() and tar_label != label_list[index]:
+#             count["df_tC"] += 1
+#         elif word_id not in dict(text).keys() and tar_label == label_list[index]:
+#             count["df_Tc"] += 1
+#         elif word_id not in dict(text).keys() and tar_label != label_list[index]:
+#             count["df_TC"] += 1
+#     return count
 
 
 tar_label_list = list(set(indus_code_list_train))
@@ -93,12 +115,7 @@ words_counts = {}
 for word_id in dictionary_train.keys():
     words_counts[word_id] = {}
     for tar_label in tar_label_list:
-        temp = df_term_cate(word_id, tar_label, indus_code_list_train, corpus_tfidf_train)
+        temp = df_term_cate(indus_code_list_train, tar_label, corpus_tfidf_train, word_id)
         words_counts[tar_label] = temp
         print tar_label
     print word_id
-
-
-def chi_test(label, corpus, dictionary):
-    for text in corpus:
-        text

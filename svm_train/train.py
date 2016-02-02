@@ -67,14 +67,14 @@ def format_text(args, index_range, stop_words):
 # 初始化
 conn = MySQLdb.connect(host='127.0.0.1', user='root',
                        passwd='root', db='stock',
-                       charset='utf8')
+                       charset='gbk')
 cursor = conn.cursor()
 jieba.load_userdict('D:/WorkSpace/Python_WorkSpace/'
                     'python_classification/dicts/user_dic')
 stop_words = set(line.rstrip() for line in codecs.open('D:/WorkSpace/Python_WorkSpace/'
                                               'python_classification/'
                                               'dicts/stop_words_CN', encoding='utf8'))
-pynlpir.open(encoding="utf8")
+pynlpir.open(encoding='utf8')
 pynlpir.nlpir.ImportUserDict('D:/WorkSpace/Python_WorkSpace/'
                              'python_classification/dicts/user_dic')
 

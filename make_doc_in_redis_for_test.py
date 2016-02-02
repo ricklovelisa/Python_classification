@@ -1,5 +1,5 @@
 import MySQLdb
-import redis
+import redis123
 import time
 import json
 import numpy
@@ -7,7 +7,7 @@ import numpy
 conn = MySQLdb.connect(host='127.0.0.1', user='root',
                        passwd='root', db='stock',
                        charset='utf8')
-r = redis.StrictRedis(host='222.73.34.96', port=6379, db=6, password='7ifW4i@M')
+r = redis123.StrictRedis(host='222.73.34.96', port=6379, db=6, password='7ifW4i@M')
 # pr = r.pipeline()
 cur = conn.cursor(cursorclass = MySQLdb.cursors.DictCursor)
 sql = "select id, title, content, url from indus_text_with_label"

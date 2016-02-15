@@ -44,8 +44,8 @@ from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 with open('svm_train/pkl/indus_code_list_train.pkl', 'a+') as f:
     indus_code_list_train = cPickle.load(f)
 
-with open('svm_train/pkl/corpus_tfidf_train.pkl', 'a+') as f:
-    corpus_tfidf_train = cPickle.load(f)
+with open('svm_train/pkl/corpus_tfidf_train_dict.pkl', 'a+') as f:
+    corpus_tfidf_train_dict = cPickle.load(f)
 
 with open('svm_train/pkl/dictionary_train.pkl', 'a+') as f:
     dictionary_train = cPickle.load(f)
@@ -74,7 +74,7 @@ def bilized_fun(x, y):
 
 
 def include_term(x, y):
-    if y in dict(x).keys():
+    if y in x:
         return 1
     else:
         return 0
@@ -110,12 +110,32 @@ def df_term_cate(indus_code_list_train, indus_code, corpus_tfidf_train, term):
 #     return count
 
 
-tar_label_list = list(set(indus_code_list_train))
+# tar_label_list = list(set(indus_code_list_train))
+# words_counts = {}
+# for word_id in dictionary_train.keys():
+#     words_counts[word_id] = {}
+#     for tar_label in tar_label_list:
+#         temp = df_term_cate(indus_code_list_train, tar_label, corpus_tfidf_train, word_id)
+#         words_counts[word_id][tar_label] = temp
+#         print tar_label
+#     print word_id
+
+# corpus_tfidf_train_dict = []
+# i = 0
+# for line in corpus_tfidf_train:
+#     corpus_tfidf_train_dict.append(dict(line).keys())
+#     i += 1
+#     print i
+
 words_counts = {}
-for word_id in dictionary_train.keys():
-    words_counts[word_id] = {}
-    for tar_label in tar_label_list:
-        temp = df_term_cate(indus_code_list_train, tar_label, corpus_tfidf_train, word_id)
-        words_counts[tar_label] = temp
-        print tar_label
-    print word_id
+tar_label_list = list(set(indus_code_list_train))
+tar_label_list = tar_label_list[0]
+for tar_label in [tar_label_list]:
+    words_counts[tar_label] = {}
+    for word_id in dictionary_train.keys():
+        temp = df_term_cate(indus_code_list_train, tar_label, corpus_tfidf_train_dict, word_id)
+        words_counts[tar_label][word_id] = temp
+        print word_id
+    print tar_label
+
+

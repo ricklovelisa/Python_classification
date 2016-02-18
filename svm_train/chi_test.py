@@ -139,3 +139,5 @@ for tar_label in [tar_label_list]:
     print tar_label
 
 
+for line in tar_label_list:
+    print line+", "+indus_code_list_train.count(line)+"\n"

@@ -31,21 +31,19 @@
 # --------------------------------------------------------------------
 
 import re
+import time
 import MySQLdb
 import urllib2
 from bs4 import BeautifulSoup
 from input_output import InputOutput
-import sys
-reload(sys)
-sys.setdefaultencoding('utf-8')
+
 
 class CrawlText(object):
-
     def __init__(self):
 
         self.from_encoding = 'GBK'
-        self.conn = MySQLdb.connect(host='112.124.49.59', user='migfm',
-                                    passwd='miglab2012', db='stock',
+        self.conn = MySQLdb.connect(host='127.0.0.1', user='root',
+                                    passwd='root', db='stock',
                                     charset='utf8')
         self.cursor = self.conn.cursor(cursorclass=MySQLdb.cursors.DictCursor)
         self.input_output = InputOutput(self.conn, self.cursor)
@@ -62,13 +60,14 @@ class CrawlText(object):
         except Exception, e:
             print e
             print url
-            return
+            time.sleep(60)
+            return "request reject"
 
     def _get_page_nums(self, soup):
 
-        page_num = soup.find_all('div', attrs={'class':'list_pager'})
-        if page_num[0].find_all('a', attrs={'class':'end'}):
-            max_page = page_num[0].find_all('a', attrs={'class':'end'})[0]['href']
+        page_num = soup.find_all('span', attrs={'class': 'num-container'})
+        if page_num[0].find_all('a', attrs={'class': 'end'}):
+            max_page = page_num[0].find_all('a', attrs={'class': 'end'})[0]['href']
             max = max_page.split('_')[1].split('.')[0]
         else:
             max = 1
@@ -80,14 +79,14 @@ class CrawlText(object):
         code_name = self.input_output.get_data(sql)
         indus_page = {}
         for line in code_name:
-            temp_url = 'http://field.10jqka.com.cn/list/field/'\
+            temp_url = 'http://field.10jqka.com.cn/list/field/' \
                        + line['indus_code'] + '/'
             doc = self._get_html(temp_url)
             soup = BeautifulSoup(doc, 'html.parser',
                                  from_encoding=from_encoding)
             page_counts = self._get_page_nums(soup)
             page_url_list = []
-            for page in range(1, page_counts+1):
+            for page in range(1, page_counts + 1):
                 page_url = temp_url + 'index_' + unicode(page) + '.shtml'
                 page_url_list.append(page_url)
             indus_page[line['indus_code']] = page_url_list
@@ -96,8 +95,10 @@ class CrawlText(object):
     def _get_text_url_list(self, url, from_encoding='utf8'):
 
         doc = self._get_html(url)
+        if doc == "request reject":
+            return "empty"
         soup = BeautifulSoup(doc, 'html.parser', from_encoding=from_encoding)
-        text_list = soup.find_all('div', attrs={'class':'list_item'})
+        text_list = soup.find_all('span', attrs={'class': 'arc-title'})
         url_list = []
         for line in text_list:
             url_list.append(line.a['href'])
@@ -111,44 +112,44 @@ class CrawlText(object):
             print e
             return
         soup = BeautifulSoup(doc, 'html.parser', from_encoding=from_encoding)
-        if soup.find_all('div', attrs={'class':'art_head'}):
-            title_temp = soup.find_all('div', attrs={'class':'art_head'})
+        if soup.find_all('div', attrs={'class': 'art_head'}):
+            title_temp = soup.find_all('div', attrs={'class': 'art_head'})
             title = title_temp[0].h1.string
             content = ''
-            content_temp = soup.find_all('div', attrs={'class':'art_main'})
+            content_temp = soup.find_all('div', attrs={'class': 'art_main'})
             content_temp_list = content_temp[0].find_all('p')
             for line in content_temp_list:
                 line_temp = str(line)
                 s_u_b = re.compile(r'<[^>]+>', re.S)
                 content_str = s_u_b.sub('', line_temp)
                 content = content + '\n' + content_str
-            result = {'title':title, 'content':content}
+            result = {'title': title, 'content': content}
             return result
-        elif soup.find_all('div', attrs={'class':'articleTit'}):
-            title_temp = soup.find_all('div', attrs={'class':'articleTit'})
+        elif soup.find_all('div', attrs={'class': 'articleTit'}):
+            title_temp = soup.find_all('div', attrs={'class': 'articleTit'})
             title = title_temp[0].string
             content = ''
-            content_temp = soup.find_all('div', attrs={'class':'art_main'})
+            content_temp = soup.find_all('div', attrs={'class': 'art_main'})
             content_temp_list = content_temp[0].find_all('p')
             for line in content_temp_list:
                 line_temp = str(line)
                 s_u_b = re.compile(r'<[^>]+>', re.S)
                 content_str = s_u_b.sub('', line_temp)
                 content = content + '\n' + content_str
-            result = {'title':title, 'content':content}
+            result = {'title': title, 'content': content}
             return result
-        elif soup.find_all('div', attrs={'class':'atc-head'}):
-            title_temp = soup.find_all('div', attrs={'class':'atc-head'})
+        elif soup.find_all('div', attrs={'class': 'atc-head'}):
+            title_temp = soup.find_all('div', attrs={'class': 'atc-head'})
             title = title_temp[0].h1.string
             content = ''
-            content_temp = soup.find_all('div', attrs={'class':'atc-content'})
+            content_temp = soup.find_all('div', attrs={'class': 'atc-content'})
             content_temp_list = content_temp[0].find_all('p')
             for line in content_temp_list:
                 line_temp = str(line)
                 s_u_b = re.compile(r'<[^>]+>', re.S)
                 content_str = s_u_b.sub('', line_temp)
                 content = content + '\n' + content_str
-            result = {'title':title, 'content':content}
+            result = {'title': title, 'content': content}
             return result
         else:
             print url
@@ -162,18 +163,20 @@ class CrawlText(object):
                              " group by indus_code"
 
             # 爬虫中断后控制重复爬取的行业
-            crawled_temp = list(self.input_output.get_data(indus_code_sql))
-            crawled_temp.remove({'indus_code':'881154'})
-            crawled_code = []
-            for crawled in crawled_temp:
-                crawled_code.append(crawled['indus_code'])
-            if indus_code in crawled_code:
-                continue
+            # crawled_temp = list(self.input_output.get_data(indus_code_sql))
+            # # crawled_temp.remove({'indus_code':'881154'})
+            # crawled_code = []
+            # for crawled in crawled_temp:
+            #     crawled_code.append(crawled['indus_code'])
+            # if indus_code in crawled_code:
+            #     continue
 
             text_url_list[indus_code] = []
             for page_url in page_urls:
                 text_url_list_temp = self._get_text_url_list(page_url,
                                                              self.from_encoding)
+                if text_url_list_temp == "empty":
+                    continue
                 for text_url in text_url_list_temp:
                     try:
                         text_content = self._get_text_content(text_url, self.from_encoding)
@@ -185,15 +188,17 @@ class CrawlText(object):
                               " title, content, url) VALUES ('%s', '%s', '%s'" \
                               ", '%s')" % (indus_code, text_content['title'],
                                            text_content['content'], text_url)
-                        self.input_output.insert_data(sql)
+                        e = self.input_output.insert_data(sql)
+
+                        # 如果发现重复插入的文章，则跳出循环
+                        if e:
+                            if e[0] == 1062:
+                                break
         self.conn.commit()
         self.cursor.close()
         self.conn.close()
 
+
 if __name__ == '__main__':
     crawl_industry_text = CrawlText()
     crawl_industry_text.main()
-
-
-
-

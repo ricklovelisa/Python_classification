@@ -1,11 +1,11 @@
 #!/usr/bin/python
 # coding: utf-8
 #
-# input_output
-# $Id: input_output.py  2015-12-14 Qiu $
+# hash_deduplication_test
+# $Id: hash_deduplication_test.py  2015-12-14 Qiu $
 #
 # history:
-# 2015-12-14 Qiu   created
+# 2016-01-09 Qiu   created
 
 # qiuqiu@kunyand-inc.com
 # http://www.kunyandata.com
@@ -28,38 +28,30 @@
 # pertaining to distribution of the software without specific, written
 # prior permission.
 #
-# --------------------------------------------------------------------
+# ----------------
 
 
-class InputOutput(object):
+print hash("我的中国梦")
+title1 = u"中国留美学生绑架案宣判 3人分别被判6-13年"
+title2 = u"三名中国留学生因绑架并凌虐同胞在美国获刑"
 
-    def __init__(self, conn, cursor):
+n = 3
+title_hash = []
 
-        self.conn = conn
-        self.cursor = cursor
 
-    def get_data(self, sql):
+def cus_hash(title, n):
 
-        try:
-            self.cursor.execute(sql)
-        except Exception, e:
-            print e
-        result = self.cursor.fetchall()
-        return result
+    title_hash = []
+    for i in range(len(title) - n + 1):
+        temp = []
+        for j in range(i, (i + n)):
+            temp.append(title[j])
+        title_hash.append(hash("".join(temp)))
+    return title_hash
+list1 = cus_hash(title1, n)
+list2 = cus_hash(title2, n)
 
-    def update_data(self, sql):
 
-        try:
-            self.cursor.execute(sql)
-        except Exception, e:
-            print e
-        self.conn.commit()
+p = len([l for l in list1 if l in list2])*1.0/max(len(list1), len(list2))
 
-    def insert_data(self, sql):
 
-        try:
-            self.cursor.execute(sql)
-        except Exception, e:
-            print e
-            return e
-        self.conn.commit()

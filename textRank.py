@@ -1,11 +1,11 @@
 #!/usr/bin/python
 # coding: utf-8
 #
-# input_output
-# $Id: input_output.py  2015-12-14 Qiu $
+# textRank
+# $Id: textRank.py  2015-12-14 Qiu $
 #
 # history:
-# 2015-12-14 Qiu   created
+# 2016-01-09 Qiu   created
 
 # qiuqiu@kunyand-inc.com
 # http://www.kunyandata.com
@@ -28,38 +28,30 @@
 # pertaining to distribution of the software without specific, written
 # prior permission.
 #
-# --------------------------------------------------------------------
+# ----------------
 
+from __future__ import print_function
+import codecs
+from textrank4zh import TextRank4Keyword, TextRank4Sentence
 
-class InputOutput(object):
+text = codecs.open('D:/textranktest', 'r', 'utf-8').read()
+tr4w = TextRank4Keyword()
 
-    def __init__(self, conn, cursor):
+tr4w.analyze(text=text, lower=True, window=2)
 
-        self.conn = conn
-        self.cursor = cursor
+print( '关键词：' )
+for item in tr4w.get_keywords(20, word_min_len=1):
+    print(item.word, item.weight)
 
-    def get_data(self, sql):
+print()
+print( '关键短语：' )
+for phrase in tr4w.get_keyphrases(keywords_num=20, min_occur_num= 2):
+    print(phrase)
 
-        try:
-            self.cursor.execute(sql)
-        except Exception, e:
-            print e
-        result = self.cursor.fetchall()
-        return result
+tr4s = TextRank4Sentence()
+tr4s.analyze(text=text, lower=True, source = 'all_filters')
 
-    def update_data(self, sql):
-
-        try:
-            self.cursor.execute(sql)
-        except Exception, e:
-            print e
-        self.conn.commit()
-
-    def insert_data(self, sql):
-
-        try:
-            self.cursor.execute(sql)
-        except Exception, e:
-            print e
-            return e
-        self.conn.commit()
+print()
+print( '摘要：' )
+for item in tr4s.get_key_sentences(num=3):
+    print(item.weight, item.sentence)
